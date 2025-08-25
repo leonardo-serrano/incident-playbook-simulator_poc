@@ -47,8 +47,8 @@ flowchart TD
 ### Installation
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/incident-playbook-simulator.git
-cd incident-playbook-simulator
+git clone https://github.com/your-org/incident-playbook-simulator_poc.git
+cd incident-playbook-simulator_poc
 
 # Create virtual environment
 python -m venv .venv
@@ -145,7 +145,7 @@ Example metrics:
 ## Project Structure
 
 ```
-incident-playbook-simulator/
+incident-playbook-simulator_poc/
 ├── orchestrator/
 │   ├── nodes/                 # Planner, Retriever, Decision, Executor, Summarizer
 │   ├── mcp_tools.py           # Mock MCP tool implementations
