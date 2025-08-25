@@ -1,0 +1,31 @@
+{
+  "runs": 2,
+  "autonomy_rate": 0.5,
+  "hitl_rate": 0.5,
+  "retrieval_relevance_rate": 1.0,
+  "action_correctness_rate": 1.0,
+  "by_alert": {
+    "ALERT-1001": {
+      "route": "executor",
+      "executed_action": "scale_instance",
+      "expected_action": "scale_instance",
+      "retrieval_match": [
+        "CPU Saturation",
+        "CPU"
+      ],
+      "autonomous": true,
+      "action_correct": true
+    },
+    "ALERT-1002": {
+      "route": "hitl",
+      "executed_action": "rollback_deployment",
+      "expected_action": "rollback_deployment",
+      "retrieval_match": [
+        "HTTP 500 Spike",
+        "HTTP 500"
+      ],
+      "autonomous": false,
+      "action_correct": true
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "runs": 1,
+  "by_alert": {
+    "ALERT-2000": {
+      "runs": 1,
+      "total_ms": 8074,
+      "avg_ms": 8074
+    }
+  },
+  "routes": {
+    "executor": 1,
+    "hitl": 0,
+    "summarizer": 0,
+    "unknown": 0
+  },
+  "actions": {
+    "clear_cache": 1
+  },
+  "evidence": {
+    "metrics_present": 1,
+    "total_log_lines": 0,
+    "avg_log_lines_per_run": 0.0
+  },
+  "llm_enabled": true,
+  "llm_model": "gemini-2.0-flash-001",
+  "generated_at": "2025-08-25T03:08:39.302102+00:00"
+}

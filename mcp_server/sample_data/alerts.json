@@ -1,0 +1,23 @@
+[
+  {
+    "id": "ALERT-1001",
+    "title": "High CPU on db01",
+    "service": "db01",
+    "symptoms": ["CPU > 95% for 10m"],
+    "detected_at": "2025-08-08T02:10:00Z"
+  },
+  {
+    "id": "ALERT-1002",
+    "title": "500 errors on checkout-api",
+    "service": "checkout-api",
+    "symptoms": ["p95 > 2s", "HTTP 500 spike"],
+    "detected_at": "2025-08-08T02:15:00Z"
+  },
+  {
+    "id": "ALERT-2000",
+    "title": "Latency anomaly on db01",
+    "service": "db01",
+    "symptoms": ["p95 latency variance", "sporadic timeouts"],
+    "detected_at": "2025-08-18T11:00:00Z"
+  }
+]

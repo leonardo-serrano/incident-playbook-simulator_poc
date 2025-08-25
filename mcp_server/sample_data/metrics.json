@@ -1,0 +1,14 @@
+{
+  "db01": {
+    "timestamp": "2025-08-08T02:10:30Z",
+    "cpu_percent": 97.3,
+    "active_connections": 420,
+    "thresholds": { "cpu_percent": 90, "active_connections": 400 }
+  },
+  "checkout-api": {
+    "timestamp": "2025-08-08T02:15:10Z",
+    "p95_latency_ms": 2400,
+    "http_500_rate": 0.08,
+    "deployment": { "version": "v2025.08.08-02:00", "deployed_at": "2025-08-08T02:00:00Z" }
+  }
+}

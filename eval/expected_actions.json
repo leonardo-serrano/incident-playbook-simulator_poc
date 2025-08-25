@@ -1,0 +1,14 @@
+{
+  "ALERT-1001": {
+    "expected_action": "scale_instance",
+    "expected_playbook_keywords": ["CPU Saturation", "CPU"]
+  },
+  "ALERT-1002": {
+    "expected_action": "rollback_deployment",
+    "expected_playbook_keywords": ["HTTP 500 Spike", "HTTP 500"]
+  },
+  "ALERT-2000": {
+    "expected_action": null,
+    "expected_playbook_keywords": ["Latency", "db01"]
+  }
+}

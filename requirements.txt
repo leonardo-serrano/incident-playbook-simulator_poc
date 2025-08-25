@@ -1,0 +1,14 @@
+langgraph
+mcp
+fastmcp
+google-genai>=0.3
+openai
+anthropic
+pydantic
+python-dotenv
+typer
+rich
+httpx
+PyYAML
+tiktoken
+tenacity

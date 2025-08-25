@@ -1,0 +1,7 @@
+{
+  "scenarios": [
+    { "id": "ALERT-1001" },
+    { "id": "ALERT-1002" },
+    { "id": "ALERT-2000" }
+  ]
+}
