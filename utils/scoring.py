@@ -23,9 +23,9 @@ from __future__ import annotations
 
 import argparse
 import json
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional
 
 
 # ----------------------------- I/O helpers ----------------------------- #
@@ -60,7 +60,8 @@ def _parse_jsonl(path: Path) -> Dict[str, Any]:
             elif rtype == "trace":
                 node = rec.get("node")
                 if node == "decision":
-                    raw = str(rec.get("next", "unknown")).strip().lower()
+                    # Workaround: prefer 'next', but if missing read 'route'
+                    raw = str(rec.get("next") or rec.get("route") or "unknown").strip().lower()
                     route = raw if raw in {"executor", "hitl", "summarizer"} else "unknown"
                 elif node == "hitl" and "approved" in rec:
                     hitl_approved = bool(rec.get("approved"))
@@ -133,7 +134,7 @@ def _score_one(trace: Dict[str, Any], expected: Dict[str, Any]) -> RunScore:
             if kw and any(kw.lower() in t for t in titles):
                 matched.append(kw)
     # degrade to (docs>0) relevance if no titles present
-    retrieval_relevant = bool(matched) or (not titles and len(titles) >= 0 and len(trace.get("doc_titles") or []) >= 1)
+    retrieval_relevant = bool(matched) or (not titles and len(trace.get("doc_titles") or []) >= 1)
 
     exec_action = None
     actions = trace.get("actions") or []
@@ -158,6 +159,7 @@ def _score_one(trace: Dict[str, Any], expected: Dict[str, Any]) -> RunScore:
 def _aggregate(scores: List[RunScore]) -> Dict[str, Any]:
     """Compute global metrics from per-run scores."""
     n = max(1, len(scores))
+
     def rate(pred) -> float:
         return round(sum(1 for s in scores if pred(s)) / n, 4)
 

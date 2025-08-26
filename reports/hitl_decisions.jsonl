@@ -14,3 +14,6 @@
 {"prompt": "Approve action 'rollback_deployment' on service 'checkout-api'?", "result": {"approved": true, "decision": "approve", "used_rule": "default"}, "timestamp": "2025-08-21T14:16:35.905246+00:00"}
 {"prompt": "Approve action 'rollback_deployment' on service 'checkout-api'?", "result": {"approved": true, "decision": "approve", "used_rule": "default"}, "timestamp": "2025-08-21T19:40:30.037856+00:00"}
 {"prompt": "Approve action 'rollback_deployment' on service 'checkout-api'?", "result": {"approved": true, "decision": "approve", "used_rule": "default"}, "timestamp": "2025-08-21T19:42:54.745085+00:00"}
+{"prompt": "Approve action 'unknown' on service ''?", "result": {"approved": true, "decision": "approve", "used_rule": "default"}, "timestamp": "2025-08-25T18:12:11.322933+00:00"}
+{"prompt": "Approve action 'unknown' on service ''?", "result": {"approved": true, "decision": "approve", "used_rule": "default"}, "timestamp": "2025-08-26T12:45:40.677139+00:00"}
+{"prompt": "Approve action 'rollback_deployment' on service 'checkout-api'?", "result": {"approved": true, "decision": "approve", "used_rule": "default"}, "timestamp": "2025-08-26T13:12:24.843343+00:00"}

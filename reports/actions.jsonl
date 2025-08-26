@@ -33,3 +33,12 @@
 {"action": "scale_instance", "payload": {"service": "db01", "target_instances": 2}, "timestamp": "2025-08-25T00:26:21.315290+00:00"}
 {"action": "rollback_deployment", "payload": {"service": "checkout-api"}, "timestamp": "2025-08-25T01:04:27.394878+00:00"}
 {"action": "clear_cache", "payload": {"scope": "global"}, "timestamp": "2025-08-25T03:08:38.502768+00:00"}
+{"action": "scale_instance", "payload": {"service": "db01", "target_instances": 2}, "timestamp": "2025-08-25T03:58:37.883720+00:00"}
+{"action": "scale_instance", "payload": {"service": "db01", "target_instances": 2}, "timestamp": "2025-08-25T04:05:37.308265+00:00"}
+{"action": "rollback_deployment", "payload": {"service": "checkout-api"}, "timestamp": "2025-08-25T04:05:46.956311+00:00"}
+{"action": "scale_instance", "payload": {"service": "db01", "target_instances": 2}, "timestamp": "2025-08-25T18:12:01.093917+00:00"}
+{"action": "scale_instance", "payload": {"service": "db01", "target_instances": 2}, "timestamp": "2025-08-25T18:44:25.066541+00:00"}
+{"action": "rollback_deployment", "payload": {"service": "checkout-api"}, "timestamp": "2025-08-25T18:44:34.656420+00:00"}
+{"action": "scale_instance", "payload": {"service": "db01", "target_instances": 2}, "timestamp": "2025-08-26T12:45:30.555863+00:00"}
+{"action": "scale_instance", "payload": {"service": "db01", "target_instances": 2}, "timestamp": "2025-08-26T13:12:14.605250+00:00"}
+{"action": "rollback_deployment", "payload": {"service": "checkout-api"}, "timestamp": "2025-08-26T13:12:24.849887+00:00"}

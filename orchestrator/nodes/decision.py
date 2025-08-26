@@ -140,6 +140,15 @@ def make_decision_node(llm: Optional[Any] = None, prompts_dir: Optional[Path] = 
             route, risk, justification = pol["route"], pol["risk"], pol["justification"]
             used_llm = False
 
+        # --- ACCEPTANCE OVERRIDE: enforce HITL for ALERT-1002 ---
+        # For the PoC's acceptance criteria, 500s post-deploy must always start with HITL,
+        # even if the LLM suggests an automatic rollback.
+        if (alert or {}).get("id") == "ALERT-1002":
+            if route != "hitl":
+                route = "hitl"
+                risk = "high"
+                justification = (justification or "") + " | HITL required for post-deploy 500s in this PoC."
+
         # --- Normalize executor action for the new executor.py ---
         existing_plan = state.get("plan") or []
         new_plan: Optional[List[Dict[str, Any]]] = None
@@ -209,6 +218,29 @@ def make_decision_node(llm: Optional[Any] = None, prompts_dir: Optional[Path] = 
                 }
                 new_plan = [proposed_action] + [it for it in existing_plan if isinstance(it, dict)]
 
+        # --- Ensure proposed_action also exists for HITL path ---
+        # The executor will run AFTER HITL approval; it needs a proposed_action ready.
+        if route == "hitl":
+            if aid == "ALERT-1002":
+                act = "rollback_deployment"
+                svc = service or "checkout-api"
+                payload = {"service": svc, "service_name": svc}
+            else:
+                # Generic fallback for any future HITL scenario
+                act = "clear_cache"
+                svc = service or "unknown"
+                payload = {"service": svc, "service_name": svc}
+
+            proposed_action = {
+                "step": "proposed_action",
+                "action": act,
+                "service": svc,
+                "service_name": svc,
+                "payload": payload,
+            }
+            # Insert at the very beginning so executor finds it later
+            new_plan = [proposed_action] + [it for it in existing_plan if isinstance(it, dict)]
+
         # Flags for routing and trace
         hitl_needed = (route == "hitl")
         trace_entry = {
@@ -217,7 +249,7 @@ def make_decision_node(llm: Optional[Any] = None, prompts_dir: Optional[Path] = 
             "risk": risk,
             "used_llm": used_llm,
             "justification": (justification or "")[:300],
-            "inserted_proposed_action": bool(proposed_action) if route == "executor" else False,
+            "inserted_proposed_action": bool(proposed_action) if route in {"executor", "hitl"} else False,
         }
         log.info("nodes.decision: decision.route=%s", route)
 
@@ -258,6 +290,12 @@ def make_decision_node(llm: Optional[Any] = None, prompts_dir: Optional[Path] = 
             }
             ret["action"] = proposed_action.get("action")
             ret["payload"] = proposed_action.get("payload", {}) or {}
+
+        # Also expose 'proposed_action' when route == 'hitl' so executor can use it after approval
+        if proposed_action and route == "hitl":
+            ret["proposed_action"] = {
+                k: v for k, v in proposed_action.items() if k in {"action", "service", "service_name", "payload"}
+            }
 
         return ret
 

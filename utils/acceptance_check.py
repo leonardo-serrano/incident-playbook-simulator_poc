@@ -34,6 +34,12 @@ def _load_json(path: Path) -> Dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _norm_route(val: str) -> str:
+    """Normalize a candidate route value into one of {executor, hitl, summarizer, unknown}."""
+    raw = (str(val or "").strip().lower())
+    return raw if raw in {"executor", "hitl", "summarizer"} else "unknown"
+
+
 def _parse_jsonl(path: Path) -> Dict[str, Any]:
     """Parse minimal info from a run trace JSONL."""
     seen_header = False
@@ -48,18 +54,29 @@ def _parse_jsonl(path: Path) -> Dict[str, Any]:
             rec = json.loads(line)
         except Exception:
             continue
+
         typ = rec.get("type")
+
         if typ == "header":
             seen_header = True
             alert_id = rec.get("alert_id", alert_id)
+
         elif typ == "trace":
-            if rec.get("node") == "retriever":
+            node = rec.get("node")
+            if node == "retriever":
                 seen_retriever = True
-            if rec.get("node") == "decision":
-                raw = str(rec.get("next", "unknown")).strip().lower()
-                route = raw if raw in {"executor", "hitl", "summarizer"} else "unknown"
+            elif node == "decision":
+                # Robust: prefer 'next', but fall back to 'route' if 'next' is missing.
+                cand = rec.get("next", None)
+                if not cand:
+                    cand = rec.get("route", None)
+                route = _norm_route(cand)
+
         elif typ == "final":
             seen_final = True
+            # Some writers may only put the final route here — accept that too.
+            if "route" in rec and route == "unknown":
+                route = _norm_route(rec.get("route"))
             for a in rec.get("actions_taken") or []:
                 if isinstance(a, dict) and "action" in a:
                     actions.append(str(a["action"]))
