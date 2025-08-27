@@ -24,8 +24,9 @@ flowchart TD
     subgraph Nodes
         Planner --> Retriever --> Decision
         Decision -->|low risk| Executor
-        Decision -->|high risk| HITL --> Executor
+        Decision -->|high risk| HITL -->|approved| Executor
         Decision -->|no action| Summarizer
+        HITL -->|rejected| Summarizer
         Executor --> Summarizer
     end
 
@@ -52,54 +53,45 @@ cd incident-playbook-simulator_poc
 
 # Create virtual environment
 python -m venv .venv
-source .venv/bin/activate   # (Linux/macOS)
-.venv\Scripts\activate    # (Windows PowerShell)
+source .venv/bin/activate  # (Linux/macOS)
+.venv\Scripts\activate     # (Windows PowerShell)
 
 # Install dependencies
 pip install -r requirements.txt
 ```
 
 ### Configuration
-- Edit `orchestrator/config.py` to set:
-  - `USE_LLM=True` or `False`
-  - `GEMINI_MODEL="gemini-2.0-flash-001"` (or another available model)
-
-- API key:
-```powershell
-$env:GOOGLE_API_KEY="your_api_key_here"
-```
-
-- .env file:
+- Create an **.env** file in ../incident-playbook-simulator_poc :
 ```bash
 # Model info
-SIM_USE_LLM=true/false
+SIM_USE_LLM=true [ false ]
 LLM_PROVIDER=google
 MODEL=gemini-2.0-flash-001
 API_KEY="your_api_key_here"
 
 # Logging
-LOG_LEVEL=INFO/DEBUG/WARNING/ERROR/CRITICAL
-LOG_FILE_LEVEL=DEBUG/INFO/WARNING/ERROR/CRITICAL
-LOG_JSON=false/true
+LOG_LEVEL=INFO [ DEBUG | WARNING | ERROR | CRITICAL ]
+LOG_FILE_LEVEL=INFO [ DEBUG | WARNING | ERROR | CRITICAL ]
+LOG_JSON=false [ true ]
 ```
 
 -- **LOG_LEVEL**:
-- **DEBUG**    → Very detailed logs for developers (all internals, step-by-step).
 - **INFO**     → General runtime information (normal operations, key events).
+- **DEBUG**    → Very detailed logs for developers (all internals, step-by-step).
 - **WARNING**  → Something unexpected happened, but execution continues.
 - **ERROR**    → An error occurred, some functionality may be affected.
 - **CRITICAL** → Severe error, the program may not be able to continue.
 
 -- **LOG_FILE_LEVEL**:
-- **DEBUG**    → Full detailed logs saved to file (useful for debugging history).
 - **INFO**     → Saves general information about execution flow to file.
+- **DEBUG**    → Full detailed logs saved to file (useful for debugging history).
 - **WARNING**  → Logs warnings that should be reviewed but are not blocking.
 - **ERROR**    → Logs errors that need fixing to maintain expected behavior.
 - **CRITICAL** → Logs only severe issues that may crash or halt the system.
 
 -- **LOG_JSON**:
-- **true**  → Logs are written in structured **JSON format** (machine-readable, useful for ingestion).
 - **false** → Logs are written in **plain text** (human-friendly format, default).
+- **true**  → Logs are written in structured **JSON format** (machine-readable, useful for ingestion).
 
 
 ---
@@ -169,7 +161,7 @@ incident-playbook-simulator_poc/
 
 - **ALERT-1001**: CPU saturation on DB → auto scale instance.
 - **ALERT-1002**: HTTP 500 spike post-deploy → HITL approval + rollback.
-- **ALERT-2000**: Latency anomaly → summarization only.
+- **ALERT-2000**: Latency anomaly → summarization only (additional scenario).
 
 ---
 
@@ -177,7 +169,7 @@ incident-playbook-simulator_poc/
 
 The PoC is considered **done** when the following acceptance criteria are met:
 
-- End-to-end runs succeed for at least **2 scenarios** (`ALERT-1001` and `ALERT-1002`).
+- End-to-end runs succeed for **2 scenarios** (`ALERT-1001` and `ALERT-1002`).
 
 - Reports are generated under `reports/`:
   - `reports/traces/` contains JSONL execution traces.
@@ -221,5 +213,12 @@ This script will:
 - **reports/traces/** → JSONL traces per execution
 
 If all criteria above are satisfied, the PoC has achieved its Definition of Done ✅.
+
+---
+
+## Authors
+
+- **Leonardo Serrano** – Data Engineer / Generative AI Enthusiast - [Email](mailto:leonardo.serrano@globallogic.com)
+- **Juan Rella** – Sofware Architect - [Email](mailto:juan.rella@globallogic.com)
 
 ---
