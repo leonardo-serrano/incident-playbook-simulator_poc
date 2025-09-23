@@ -3,18 +3,18 @@
   "by_alert": {
     "ALERT-1001": {
       "runs": 1,
-      "total_ms": 83,
-      "avg_ms": 83
+      "total_ms": 52,
+      "avg_ms": 52
     },
     "ALERT-1002": {
       "runs": 1,
-      "total_ms": 61,
-      "avg_ms": 61
+      "total_ms": 43,
+      "avg_ms": 43
     },
     "ALERT-2000": {
       "runs": 1,
-      "total_ms": 65,
-      "avg_ms": 65
+      "total_ms": 44,
+      "avg_ms": 44
     }
   },
   "routes": {
@@ -39,5 +39,5 @@
   },
   "llm_enabled": false,
   "llm_model": null,
-  "generated_at": "2025-09-23T01:23:49.698518+00:00"
+  "generated_at": "2025-09-23T01:42:19.700407+00:00"
 }

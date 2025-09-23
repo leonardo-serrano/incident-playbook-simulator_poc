@@ -27,7 +27,7 @@ import httpx
 class MCPToolbox:
     """Facade for calling our tools via either MCP stdio or HTTP."""
 
-    def __init__(self, server_path: Path, handshake_timeout: float = 3.0):
+    def __init__(self, server_path: Path, handshake_timeout: float = 10.0):
         self._log = logging.getLogger("tools")
         self.server_path = Path(server_path)
         self.handshake_timeout = handshake_timeout
