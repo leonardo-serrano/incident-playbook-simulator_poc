@@ -18,6 +18,7 @@
     "title": "Latency anomaly on db01",
     "service": "db01",
     "symptoms": ["p95 latency variance", "sporadic timeouts"],
+    "tags": ["data-migration"],
     "detected_at": "2025-08-18T11:00:00Z"
   }
 ]

@@ -1,7 +1,8 @@
 # orchestrator/config.py
 """Simple config loader for the POC.
 - USE_LLM: enable/disable LLM-powered planner/summarizer.
-- OPENAI_MODEL: model name (default 'gpt-5').
+- LLM_PROVIDER: one of {google, openai, anthropic}
+- MODEL/API_KEY per provider.
 Values are read from environment variables so you can tweak them without code changes.
 """
 from __future__ import annotations
@@ -22,5 +23,21 @@ def _as_bool(val: str | None, default: bool=False) -> bool:
 # Public config flags
 USE_LLM: bool = _as_bool(os.getenv("SIM_USE_LLM"), default=False)
 LLM_PROVIDER   = (os.getenv("LLM_PROVIDER") or "google").lower()
-GEMINI_MODEL   = os.getenv("MODEL", "gemini-2.0-flash-001")
-GOOGLE_API_KEY = os.getenv("API_KEY")
+
+# Google Gemini (defaults preserved for backward compatibility)
+GEMINI_MODEL   = os.getenv("MODEL", os.getenv("GEMINI_MODEL", "gemini-2.0-flash-001"))
+GOOGLE_API_KEY = os.getenv("API_KEY", os.getenv("GOOGLE_API_KEY"))
+
+# OpenAI
+OPENAI_MODEL   = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+# Anthropic
+ANTHROPIC_MODEL   = os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-latest")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+
+# MCP transport configuration
+# MCP_TRANSPORT: 'stdio' (default) or 'http'
+MCP_TRANSPORT = (os.getenv("MCP_TRANSPORT") or "stdio").lower()
+# MCP_SERVER_URL: e.g., http://127.0.0.1:8765 (only used when MCP_TRANSPORT=http)
+MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "")

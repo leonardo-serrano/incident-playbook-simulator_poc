@@ -1,0 +1,50 @@
+{
+  "default": {
+    "route": "summarizer",
+    "risk": "none",
+    "justification": "No clear action; produce summary."
+  },
+  "rules": [
+    {
+      "when": { "alert_id": "ALERT-1002" },
+      "enforce": true,
+      "decision": {
+        "route": "hitl",
+        "risk": "high",
+        "justification": "HITL required for post-deploy 500 spikes in this PoC."
+      },
+      "proposed_action": {
+        "action": "rollback_deployment",
+        "service": "checkout-api",
+        "payload": {}
+      }
+    },
+    {
+      "when": { "alert_id": "ALERT-1001" },
+      "enforce": true,
+      "decision": {
+        "route": "executor",
+        "risk": "low",
+        "justification": "CPU high on db01; safe to scale."
+      },
+      "proposed_action": {
+        "action": "scale_instance",
+        "service": "db01",
+        "payload": { "target": 2 }
+      }
+    },
+    {
+      "when": { "tags": ["data-migration"] },
+      "enforce": true,
+      "decision": {
+        "route": "hitl",
+        "risk": "high",
+        "justification": "Data migration requires approval."
+      },
+      "proposed_action": {
+        "action": "clear_cache",
+        "payload": { "scope": "global" }
+      }
+    }
+  ]
+}

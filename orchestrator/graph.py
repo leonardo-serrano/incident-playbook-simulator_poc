@@ -9,7 +9,17 @@ from typing import Any, Dict, TypedDict
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
 
-from orchestrator.config import USE_LLM, GEMINI_MODEL, GOOGLE_API_KEY, PROJECT_ROOT
+from orchestrator.config import (
+    USE_LLM,
+    LLM_PROVIDER,
+    GEMINI_MODEL,
+    GOOGLE_API_KEY,
+    OPENAI_MODEL,
+    OPENAI_API_KEY,
+    ANTHROPIC_MODEL,
+    ANTHROPIC_API_KEY,
+    PROJECT_ROOT,
+)
 from orchestrator.llm import build_llm_or_none, ensure_text_iface
 from orchestrator.mcp_tools import MCPToolbox
 from orchestrator.nodes.planner import make_planner_node
@@ -52,9 +62,13 @@ def build_graph(server_path: Path):
     llm = None
     if USE_LLM:
         llm = build_llm_or_none(
-            provider="google",              # force Gemini-only
-            google_key=GOOGLE_API_KEY,      # read from .env
-            google_model=GEMINI_MODEL,      # e.g., "gemini-2.0-flash-001"
+            provider=LLM_PROVIDER,
+            google_key=GOOGLE_API_KEY,
+            google_model=GEMINI_MODEL,
+            openai_key=OPENAI_API_KEY,
+            openai_model=OPENAI_MODEL,
+            anthropic_key=ANTHROPIC_API_KEY,
+            anthropic_model=ANTHROPIC_MODEL,
         )
 
     graph = StateGraph(GraphState)

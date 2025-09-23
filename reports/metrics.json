@@ -1,31 +1,43 @@
 {
-  "runs": 1,
+  "runs": 3,
   "by_alert": {
+    "ALERT-1001": {
+      "runs": 1,
+      "total_ms": 83,
+      "avg_ms": 83
+    },
     "ALERT-1002": {
       "runs": 1,
-      "total_ms": 8401,
-      "avg_ms": 8401
+      "total_ms": 61,
+      "avg_ms": 61
+    },
+    "ALERT-2000": {
+      "runs": 1,
+      "total_ms": 65,
+      "avg_ms": 65
     }
   },
   "routes": {
-    "executor": 0,
-    "hitl": 1,
+    "executor": 1,
+    "hitl": 2,
     "summarizer": 0,
     "unknown": 0
   },
   "actions": {
-    "rollback_deployment": 1
-  },
-  "hitl": {
-    "approved": 1,
-    "rejected": 0
+    "scale_instance": 1,
+    "rollback_deployment": 1,
+    "clear_cache": 1
   },
   "evidence": {
-    "metrics_present": 1,
-    "total_log_lines": 0,
-    "avg_log_lines_per_run": 0.0
+    "metrics_present": 3,
+    "total_log_lines": 5,
+    "avg_log_lines_per_run": 1.6666666666666667
   },
-  "llm_enabled": true,
-  "llm_model": "gemini-2.0-flash-001",
-  "generated_at": "2025-08-26T13:12:25.965034+00:00"
+  "hitl": {
+    "approved": 2,
+    "rejected": 0
+  },
+  "llm_enabled": false,
+  "llm_model": null,
+  "generated_at": "2025-09-23T01:23:49.698518+00:00"
 }

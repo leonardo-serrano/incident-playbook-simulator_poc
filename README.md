@@ -62,18 +62,55 @@ pip install -r requirements.txt
 
 ### Configuration
 - Create an **.env** file in ../incident-playbook-simulator_poc :
+
+Google Gemini (default)
 ```bash
-# Model info
-SIM_USE_LLM=true [ false ]
+# Enable/disable LLM
+SIM_USE_LLM=true
+
+# Select provider
 LLM_PROVIDER=google
-MODEL=gemini-2.0-flash-001
-API_KEY="your_api_key_here"
+
+# Google Gemini credentials and model
+GOOGLE_API_KEY="your_google_key_here"   # or API_KEY
+GEMINI_MODEL=gemini-2.0-flash-001       # or MODEL
 
 # Logging
-LOG_LEVEL=INFO [ DEBUG | WARNING | ERROR | CRITICAL ]
-LOG_FILE_LEVEL=INFO [ DEBUG | WARNING | ERROR | CRITICAL ]
-LOG_JSON=false [ true ]
+LOG_LEVEL=INFO
+LOG_FILE_LEVEL=INFO
+LOG_JSON=false
 ```
+
+OpenAI
+```bash
+SIM_USE_LLM=true
+LLM_PROVIDER=openai
+
+OPENAI_API_KEY="your_openai_key_here"
+OPENAI_MODEL=gpt-4o-mini
+
+LOG_LEVEL=INFO
+LOG_FILE_LEVEL=INFO
+LOG_JSON=false
+```
+
+Anthropic
+```bash
+SIM_USE_LLM=true
+LLM_PROVIDER=anthropic
+
+ANTHROPIC_API_KEY="your_anthropic_key_here"
+ANTHROPIC_MODEL=claude-3-5-sonnet-latest
+
+LOG_LEVEL=INFO
+LOG_FILE_LEVEL=INFO
+LOG_JSON=false
+```
+
+Notes
+- Switching provider is a config-only change via `LLM_PROVIDER`.
+- If the selected provider lacks API key, the LLM will be disabled gracefully and the app will fall back to deterministic logic.
+- For Google, `GEMINI_MODEL` can also be set via `MODEL`, and `GOOGLE_API_KEY` via `API_KEY` (backward-compatible).
 
 -- **LOG_LEVEL**:
 - **INFO**     → General runtime information (normal operations, key events).
@@ -113,6 +150,40 @@ python main.py --batch
 python -m utils.scoring --traces ./reports/traces --expected ./eval/expected_actions.json --out ./reports/score.json
 ```
 
+### MCP over HTTP (optional, recommended)
+
+By default, the app uses MCP over stdio to communicate with the local mock MCP server. You can switch to a simple HTTP transport to simplify client/server wiring.
+
+Run the HTTP MCP server in one terminal:
+
+```bash
+source .venv/bin/activate
+python3 -m mcp_server.http_server --host 127.0.0.1 --port 8765
+```
+
+Then, in another terminal, configure the client and run the app:
+
+```bash
+source .venv/bin/activate
+export MCP_TRANSPORT=http
+export MCP_SERVER_URL=http://127.0.0.1:8765
+
+python3 main.py --batch
+```
+
+Notes
+- MCP_TRANSPORT=stdio (default) keeps legacy stdio mode.
+- MCP_TRANSPORT=http requires MCP_SERVER_URL (e.g., http://127.0.0.1:8765).
+- The HTTP server is a lightweight wrapper over the same tool functions defined in `mcp_server/server.py`.
+
+### Acceptance validation
+To validate acceptance criteria end-to-end (ensures ALERT-1001 → executor/scale_instance and ALERT-1002 → HITL/rollback_deployment):
+
+```bash
+python3 main.py --batch
+python3 utils/acceptance_check.py
+```
+
 ---
 
 ## Outputs
@@ -150,8 +221,11 @@ incident-playbook-simulator_poc/
 ├── reports/                   # Output traces & scoring
 ├── utils/
 │   ├── logging_utils.py       # Correlation ID + structured logging
+│   ├── policy.py              # Configurable decision policy loader/evaluator
 │   └── scoring.py             # Evaluation metrics
 ├── main.py                    # CLI entrypoint
+├── sample_data/
+│   └── decision_policy.json   # Rules to drive decision routing and proposed actions
 └── README.md                  # Documentation
 ```
 
@@ -213,6 +287,93 @@ This script will:
 - **reports/traces/** → JSONL traces per execution
 
 If all criteria above are satisfied, the PoC has achieved its Definition of Done ✅.
+
+---
+
+## Configurable Decision Policy
+
+The decision routing and proposed actions are driven by a JSON policy, allowing you to add new scenarios without changing code.
+
+- Policy file (default): `sample_data/decision_policy.json`
+- Override with environment variable: `DECISION_POLICY_PATH=/path/to/policy.json`
+
+Structure:
+
+```json
+{
+  "default": { "route": "summarizer", "risk": "none", "justification": "No clear action; produce summary." },
+  "rules": [
+    {
+      "when": { "alert_id": "ALERT-1002" },
+      "enforce": true,
+      "decision": {
+        "route": "hitl",
+        "risk": "high",
+        "justification": "HITL required for post-deploy 500 spikes in this PoC."
+      },
+      "proposed_action": { "action": "rollback_deployment", "service": "checkout-api", "payload": {} }
+    },
+    {
+      "when": { "alert_id": "ALERT-1001" },
+      "enforce": true,
+      "decision": {
+        "route": "executor",
+        "risk": "low",
+        "justification": "CPU high on db01; safe to scale."
+      },
+      "proposed_action": { "action": "scale_instance", "service": "db01", "payload": { "target": 2 } }
+    }
+  ]
+}
+```
+
+Notes:
+- The first matching rule wins.
+- If `enforce` is true, the rule overrides any LLM suggestion.
+- `proposed_action` is normalized to include both `service` and `service_name`, and its `payload` is merged with them for executor compatibility.
+
+### Extending rules by service, severity, and tags
+You can extend `when` conditions beyond `alert_id`. For example, by including `service`, `severity`, or `tags` baked into your alert inputs.
+
+Examples:
+
+```jsonc
+{
+  "rules": [
+    // Route all checkout-api rollbacks through HITL
+    {
+      "when": { "service": "checkout-api" },
+      "enforce": true,
+      "decision": { "route": "hitl", "risk": "high", "justification": "High-risk customer-facing API." },
+      "proposed_action": { "action": "rollback_deployment" }
+    },
+
+    // Auto-execute for low severity cache incidents
+    {
+      "when": { "service": "cache", "severity": "low" },
+      "enforce": false,
+      "decision": { "route": "executor", "risk": "low", "justification": "Low severity cache issue." },
+      "proposed_action": { "action": "clear_cache", "payload": { "scope": "global" } }
+    },
+
+    // Tag-based routing: any incident tagged as `data-migration`
+    {
+      "when": { "tags": ["data-migration"] },
+      "enforce": true,
+      "decision": { "route": "hitl", "risk": "high", "justification": "Data migration requires approval." }
+    }
+  ]
+}
+```
+
+Implementation detail: Policy matching supports multiple conditions with AND semantics across provided fields:
+
+- `alert_id`: exact match
+- `service` / `service_name`: exact match
+- `severity`: exact match
+- `tags`: requires non-empty intersection between rule tags and alert tags
+
+You can combine these in `when` to target very specific scenarios. The first matching rule applies.
 
 ---
 

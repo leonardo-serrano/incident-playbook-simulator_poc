@@ -17,3 +17,13 @@
 {"prompt": "Approve action 'unknown' on service ''?", "result": {"approved": true, "decision": "approve", "used_rule": "default"}, "timestamp": "2025-08-25T18:12:11.322933+00:00"}
 {"prompt": "Approve action 'unknown' on service ''?", "result": {"approved": true, "decision": "approve", "used_rule": "default"}, "timestamp": "2025-08-26T12:45:40.677139+00:00"}
 {"prompt": "Approve action 'rollback_deployment' on service 'checkout-api'?", "result": {"approved": true, "decision": "approve", "used_rule": "default"}, "timestamp": "2025-08-26T13:12:24.843343+00:00"}
+{"prompt": "Approve action 'rollback_deployment' on service 'checkout-api'?", "result": {"approved": true, "decision": "approve", "used_rule": "default"}, "timestamp": "2025-09-23T00:10:52.095233+00:00"}
+{"prompt": "Approve action 'rollback_deployment' on service 'checkout-api'?", "result": {"approved": true, "decision": "approve", "used_rule": "default"}, "timestamp": "2025-09-23T00:15:17.239161+00:00"}
+{"prompt": "Approve action 'rollback_deployment' on service 'checkout-api'?", "result": {"approved": true, "decision": "approve", "used_rule": "default"}, "timestamp": "2025-09-23T00:17:07.331588+00:00"}
+{"prompt": "Approve action 'clear_cache' on service 'db01'?", "result": {"approved": true, "decision": "approve", "used_rule": "default"}, "timestamp": "2025-09-23T00:17:10.466104+00:00"}
+{"prompt": "Approve action 'rollback_deployment' on service 'checkout-api'?", "result": {"approved": true, "decision": "approve", "used_rule": "default"}, "timestamp": "2025-09-23T00:19:10.499656+00:00"}
+{"prompt": "Approve action 'clear_cache' on service 'db01'?", "result": {"approved": true, "decision": "approve", "used_rule": "default"}, "timestamp": "2025-09-23T00:19:13.648064+00:00"}
+{"prompt": "Approve action 'rollback_deployment' on service 'checkout-api'?", "result": {"approved": true, "decision": "approve", "used_rule": "default"}, "timestamp": "2025-09-23T01:04:06.346600+00:00"}
+{"prompt": "Approve action 'clear_cache' on service 'db01'?", "result": {"approved": true, "decision": "approve", "used_rule": "default"}, "timestamp": "2025-09-23T01:04:09.478855+00:00"}
+{"prompt": "Approve action 'rollback_deployment' on service 'checkout-api'?", "result": {"approved": true, "decision": "approve", "used_rule": "default"}, "timestamp": "2025-09-23T01:23:49.622735+00:00"}
+{"prompt": "Approve action 'clear_cache' on service 'db01'?", "result": {"approved": true, "decision": "approve", "used_rule": "default"}, "timestamp": "2025-09-23T01:23:49.689629+00:00"}

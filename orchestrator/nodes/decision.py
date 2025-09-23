@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional
 from pathlib import Path
 import json
 import logging
+from utils.policy import evaluate_decision_policy
 
 log = logging.getLogger("nodes.decision")
 
@@ -58,21 +59,7 @@ def _coerce_to_dict(x: Any) -> Dict[str, Any]:
                 return {"raw": x}
     return {"raw": x}
 
-# ---------- deterministic fallback (aligned with PoC examples) ----------
-
-def _fallback_policy(alert: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Simple deterministic policy for the PoC:
-      - ALERT-1001 → executor (scale_instance)
-      - ALERT-1002 → hitl (possible rollback)
-      - otherwise  → summarizer
-    """
-    aid = (alert or {}).get("id", "")
-    if aid == "ALERT-1001":
-        return {"route": "executor", "risk": "low", "justification": "Scale db01 (CPU high)."}
-    if aid == "ALERT-1002":
-        return {"route": "hitl", "risk": "high", "justification": "HTTP 500 spike after deploy; request approval."}
-    return {"route": "summarizer", "risk": "none", "justification": "No clear action; produce summary."}
+# (removed) deterministic fallback now driven by policy in utils/policy.py
 
 # ---------- factory ----------
 
@@ -124,6 +111,7 @@ def make_decision_node(llm: Optional[Any] = None, prompts_dir: Optional[Path] = 
         route = "summarizer"
         risk = "none"
         justification = "Fallback policy."
+        suggested_action: Optional[Dict[str, Any]] = None
 
         if llm is not None:
             try:
@@ -135,19 +123,16 @@ def make_decision_node(llm: Optional[Any] = None, prompts_dir: Optional[Path] = 
             except Exception as e:
                 log.error("LLM decision failed; using fallback policy: %s", e)
 
+        # Apply configurable decision policy (can enforce overrides and suggest actions)
+        route, risk, justification, suggested_action = evaluate_decision_policy(
+            alert, route, risk, justification
+        )
         if route not in {"executor", "hitl", "summarizer"}:
-            pol = _fallback_policy(alert)
-            route, risk, justification = pol["route"], pol["risk"], pol["justification"]
+            # As a last resort, normalize to summarizer
+            route, risk, justification = "summarizer", (risk or "none"), justification
             used_llm = False
 
-        # --- ACCEPTANCE OVERRIDE: enforce HITL for ALERT-1002 ---
-        # For the PoC's acceptance criteria, 500s post-deploy must always start with HITL,
-        # even if the LLM suggests an automatic rollback.
-        if (alert or {}).get("id") == "ALERT-1002":
-            if route != "hitl":
-                route = "hitl"
-                risk = "high"
-                justification = (justification or "") + " | HITL required for post-deploy 500s in this PoC."
+        # (removed) ALERT-1002-specific override; handled via policy rules
 
         # --- Normalize executor action for the new executor.py ---
         existing_plan = state.get("plan") or []
@@ -195,20 +180,32 @@ def make_decision_node(llm: Optional[Any] = None, prompts_dir: Optional[Path] = 
                 new_plan = [proposed_action] + [it for it in existing_plan if isinstance(it, dict)]
 
             else:
-                # 2) No action in plan → synthesize by alert-id heuristics
-                if aid == "ALERT-1001":
-                    act = "scale_instance"
-                    svc = service or "db01"
-                    payload = {"service": svc, "service_name": svc, "target": 2, "target_instances": 2}
-                elif aid == "ALERT-1002":
-                    act = "rollback_deployment"
-                    svc = service or "checkout-api"
-                    payload = {"service": svc, "service_name": svc}
+                # 2) No action in plan → prefer policy-suggested action; otherwise synthesize generic
+                if suggested_action is not None:
+                    proposed_action = suggested_action
                 else:
                     act = "clear_cache"
                     svc = service or "unknown"
                     payload = {"service": svc, "service_name": svc}
+                    proposed_action = {
+                        "step": "proposed_action",
+                        "action": act,
+                        "service": svc,
+                        "service_name": svc,
+                        "payload": payload,
+                    }
+                new_plan = [proposed_action] + [it for it in existing_plan if isinstance(it, dict)]
 
+        # --- Ensure proposed_action also exists for HITL path ---
+        # The executor will run AFTER HITL approval; it needs a proposed_action ready.
+        if route == "hitl":
+            # Prefer policy-suggested action; else provide a generic placeholder
+            if suggested_action is not None:
+                proposed_action = suggested_action
+            else:
+                act = "clear_cache"
+                svc = service or "unknown"
+                payload = {"service": svc, "service_name": svc}
                 proposed_action = {
                     "step": "proposed_action",
                     "action": act,
@@ -216,28 +213,6 @@ def make_decision_node(llm: Optional[Any] = None, prompts_dir: Optional[Path] = 
                     "service_name": svc,
                     "payload": payload,
                 }
-                new_plan = [proposed_action] + [it for it in existing_plan if isinstance(it, dict)]
-
-        # --- Ensure proposed_action also exists for HITL path ---
-        # The executor will run AFTER HITL approval; it needs a proposed_action ready.
-        if route == "hitl":
-            if aid == "ALERT-1002":
-                act = "rollback_deployment"
-                svc = service or "checkout-api"
-                payload = {"service": svc, "service_name": svc}
-            else:
-                # Generic fallback for any future HITL scenario
-                act = "clear_cache"
-                svc = service or "unknown"
-                payload = {"service": svc, "service_name": svc}
-
-            proposed_action = {
-                "step": "proposed_action",
-                "action": act,
-                "service": svc,
-                "service_name": svc,
-                "payload": payload,
-            }
             # Insert at the very beginning so executor finds it later
             new_plan = [proposed_action] + [it for it in existing_plan if isinstance(it, dict)]
 
