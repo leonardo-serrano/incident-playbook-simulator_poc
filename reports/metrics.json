@@ -3,18 +3,18 @@
   "by_alert": {
     "ALERT-1001": {
       "runs": 1,
-      "total_ms": 52,
-      "avg_ms": 52
+      "total_ms": 49,
+      "avg_ms": 49
     },
     "ALERT-1002": {
       "runs": 1,
-      "total_ms": 43,
-      "avg_ms": 43
+      "total_ms": 52,
+      "avg_ms": 52
     },
     "ALERT-2000": {
       "runs": 1,
-      "total_ms": 44,
-      "avg_ms": 44
+      "total_ms": 52,
+      "avg_ms": 52
     }
   },
   "routes": {
@@ -37,7 +37,7 @@
     "approved": 2,
     "rejected": 0
   },
-  "llm_enabled": false,
-  "llm_model": null,
-  "generated_at": "2025-09-23T01:42:19.700407+00:00"
+  "llm_enabled": true,
+  "llm_model": "gemini-2.0-flash-001",
+  "generated_at": "2025-09-24T20:26:42.340838+00:00"
 }

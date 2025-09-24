@@ -15,6 +15,7 @@ import contextlib
 import json
 import sys
 import logging
+import os
 from pathlib import Path
 from typing import Any, Dict, Tuple, Optional
 from mcp.client.session import ClientSession
@@ -52,7 +53,10 @@ class MCPToolbox:
             base_url = MCP_SERVER_URL.strip()
             if not base_url:
                 raise RuntimeError("MCP_TRANSPORT=http requires MCP_SERVER_URL to be set (e.g., http://127.0.0.1:8765)")
-            self._http = httpx.AsyncClient(base_url=base_url, timeout=self.handshake_timeout)
+            # Optional shared token for hardened HTTP server
+            token = os.getenv("MCP_HTTP_TOKEN", "").strip()
+            headers = {"X-Auth-Token": token} if token else None
+            self._http = httpx.AsyncClient(base_url=base_url, timeout=self.handshake_timeout, headers=headers)
             # Optional: ping a non-existent endpoint to warm DNS/connection
             return self
 

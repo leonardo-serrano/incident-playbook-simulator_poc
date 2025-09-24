@@ -22,7 +22,8 @@ def _as_bool(val: str | None, default: bool=False) -> bool:
 
 # Public config flags
 USE_LLM: bool = _as_bool(os.getenv("SIM_USE_LLM"), default=False)
-LLM_PROVIDER   = (os.getenv("LLM_PROVIDER") or "google").lower()
+# Enforce Gemini as the only LLM provider regardless of environment
+LLM_PROVIDER   = "google"
 
 # Google Gemini (defaults preserved for backward compatibility)
 GEMINI_MODEL   = os.getenv("MODEL", os.getenv("GEMINI_MODEL", "gemini-2.0-flash-001"))

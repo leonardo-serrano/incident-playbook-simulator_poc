@@ -61,15 +61,15 @@ pip install -r requirements.txt
 ```
 
 ### Configuration
-- Create an **.env** file in ../incident-playbook-simulator_poc :
+- Create an **.env** file in `incident-playbook-simulator_poc/` (a template `.env.example` is provided).
 
-Google Gemini (default)
+Google Gemini (only supported provider)
 ```bash
 # Enable/disable LLM
 SIM_USE_LLM=true
 
-# Select provider
-LLM_PROVIDER=google
+# Provider is fixed to google in code (LLM_PROVIDER is ignored)
+# LLM_PROVIDER=google
 
 # Google Gemini credentials and model
 GOOGLE_API_KEY="your_google_key_here"   # or API_KEY
@@ -81,35 +81,9 @@ LOG_FILE_LEVEL=INFO
 LOG_JSON=false
 ```
 
-OpenAI
-```bash
-SIM_USE_LLM=true
-LLM_PROVIDER=openai
-
-OPENAI_API_KEY="your_openai_key_here"
-OPENAI_MODEL=gpt-4o-mini
-
-LOG_LEVEL=INFO
-LOG_FILE_LEVEL=INFO
-LOG_JSON=false
-```
-
-Anthropic
-```bash
-SIM_USE_LLM=true
-LLM_PROVIDER=anthropic
-
-ANTHROPIC_API_KEY="your_anthropic_key_here"
-ANTHROPIC_MODEL=claude-3-5-sonnet-latest
-
-LOG_LEVEL=INFO
-LOG_FILE_LEVEL=INFO
-LOG_JSON=false
-```
-
 Notes
-- Switching provider is a config-only change via `LLM_PROVIDER`.
-- If the selected provider lacks API key, the LLM will be disabled gracefully and the app will fall back to deterministic logic.
+- The provider is fixed to Google Gemini in `orchestrator/config.py` (LLM_PROVIDER="google").
+- If `GOOGLE_API_KEY` is missing or `SIM_USE_LLM=false`, the app caerá en lógica determinística sin LLM.
 - For Google, `GEMINI_MODEL` can also be set via `MODEL`, and `GOOGLE_API_KEY` via `API_KEY` (backward-compatible).
 
 -- **LOG_LEVEL**:
