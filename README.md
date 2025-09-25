@@ -63,13 +63,10 @@ pip install -r requirements.txt
 ### Configuration
 - Create an **.env** file in `incident-playbook-simulator_poc/` (a template `.env.example` is provided).
 
-Google Gemini (only supported provider)
+Google Gemini
 ```bash
 # Enable/disable LLM
 SIM_USE_LLM=true
-
-# Provider is fixed to google in code (LLM_PROVIDER is ignored)
-# LLM_PROVIDER=google
 
 # Google Gemini credentials and model
 GOOGLE_API_KEY="your_google_key_here"   # or API_KEY
@@ -82,8 +79,6 @@ LOG_JSON=false
 ```
 
 Notes
-- The provider is fixed to Google Gemini in `orchestrator/config.py` (LLM_PROVIDER="google").
-- If `GOOGLE_API_KEY` is missing or `SIM_USE_LLM=false`, the app caerá en lógica determinística sin LLM.
 - For Google, `GEMINI_MODEL` can also be set via `MODEL`, and `GOOGLE_API_KEY` via `API_KEY` (backward-compatible).
 
 -- **LOG_LEVEL**:
@@ -106,6 +101,45 @@ Notes
 
 
 ---
+
+## Quick Start (Gemini + MCP HTTP)
+
+1) Create venv and install deps
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+2) Minimal .env (Gemini-only)
+```bash
+SIM_USE_LLM=true
+GOOGLE_API_KEY=YOUR_API_KEY
+GEMINI_MODEL=gemini-2.0-flash-001
+MCP_TRANSPORT=http
+MCP_SERVER_URL=http://127.0.0.1:8790
+```
+
+3) Start MCP HTTP server (Terminal 1)
+```bash
+source .venv/bin/activate
+python3 -m mcp_server.http_server --host 127.0.0.1 --port 8790
+```
+
+4) Run alerts and acceptance (Terminal 2)
+```bash
+source .venv/bin/activate
+export MCP_TRANSPORT=http
+export MCP_SERVER_URL=http://127.0.0.1:8790
+
+python3 main.py --alert ALERT-1001
+python3 main.py --alert ALERT-1002
+python3 utils/acceptance_check.py
+```
+
+Notes
+- LLM is active when `SIM_USE_LLM=true` and `GOOGLE_API_KEY` is set.
+- Outputs are written to `reports/` (traces, metrics, actions).
 
 ## Usage
 
@@ -159,6 +193,79 @@ python3 utils/acceptance_check.py
 ```
 
 ---
+
+## Troubleshooting (Gemini + MCP HTTP)
+
+- Liberar puerto ocupado (ej. 8790) en Linux
+  - Identificar el proceso que ocupa el puerto:
+    ```bash
+    ss -ltnp | grep :8790
+    # o
+    lsof -i :8790
+    ```
+  - Matar el proceso por PID (ej. PID=12345):
+    ```bash
+    kill 12345         # intento amable
+    kill -9 12345      # forzar si no responde
+    ```
+  - Alternativa rápida con fuser:
+    ```bash
+    fuser -k 8790/tcp  # mata proceso(s) que usen 8790/tcp
+    ```
+  - Reiniciar el servidor MCP en ese puerto:
+    ```bash
+    python3 -m mcp_server.http_server --host 127.0.0.1 --port 8790
+    ```
+
+- Liberar puerto en macOS
+  - Identificar proceso:
+    ```bash
+    lsof -iTCP -sTCP:LISTEN -n -P | grep 8790
+    # o directamente obtener solo el PID
+    lsof -ti tcp:8790
+    ```
+  - Matar proceso (ej. PID=12345):
+    ```bash
+    kill 12345
+    kill -9 12345    # forzar
+    ```
+
+- Liberar puerto en Windows (PowerShell)
+  - Identificar proceso:
+    ```powershell
+    netstat -ano | findstr :8790
+    ```
+  - Matar proceso por PID (ej. 12345):
+    ```powershell
+    taskkill /PID 12345 /F
+    ```
+
+- Ejecutar el servidor MCP HTTP como servicio systemd (opcional)
+  - Unidad ejemplo `/etc/systemd/system/mcp-http.service`:
+    ```ini
+    [Unit]
+    Description=MCP HTTP Server (Incident Playbook PoC)
+    After=network-online.target
+
+    [Service]
+    Type=simple
+    WorkingDirectory=/path/a/incident-playbook-simulator_poc
+    ExecStart=/path/a/incident-playbook-simulator_poc/.venv/bin/python -m mcp_server.http_server --host 127.0.0.1 --port 8790
+    Restart=on-failure
+    RestartSec=3
+    Environment=MCP_TRANSPORT=http
+    Environment=MCP_SERVER_URL=http://127.0.0.1:8790
+
+    [Install]
+    WantedBy=multi-user.target
+    ```
+  - Comandos:
+    ```bash
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now mcp-http.service
+    systemctl status mcp-http.service --no-pager
+    journalctl -u mcp-http.service -f
+    ```
 
 ## Outputs
 
@@ -259,11 +366,6 @@ This script will:
 - **reports/metrics.json** → aggregated metrics
 - **reports/score.json** → success metrics and per-scenario scoring
 - **reports/traces/** → JSONL traces per execution
-
-If all criteria above are satisfied, the PoC has achieved its Definition of Done ✅.
-
----
-
 ## Configurable Decision Policy
 
 The decision routing and proposed actions are driven by a JSON policy, allowing you to add new scenarios without changing code.

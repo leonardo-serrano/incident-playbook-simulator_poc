@@ -11,13 +11,8 @@ from langgraph.checkpoint.memory import MemorySaver
 
 from orchestrator.config import (
     USE_LLM,
-    LLM_PROVIDER,
     GEMINI_MODEL,
     GOOGLE_API_KEY,
-    OPENAI_MODEL,
-    OPENAI_API_KEY,
-    ANTHROPIC_MODEL,
-    ANTHROPIC_API_KEY,
     PROJECT_ROOT,
 )
 from orchestrator.llm import build_llm_or_none, ensure_text_iface
@@ -61,15 +56,7 @@ def build_graph(server_path: Path):
     # LLM is optional; when disabled or misconfigured, nodes use deterministic fallbacks
     llm = None
     if USE_LLM:
-        llm = build_llm_or_none(
-            provider=LLM_PROVIDER,
-            google_key=GOOGLE_API_KEY,
-            google_model=GEMINI_MODEL,
-            openai_key=OPENAI_API_KEY,
-            openai_model=OPENAI_MODEL,
-            anthropic_key=ANTHROPIC_API_KEY,
-            anthropic_model=ANTHROPIC_MODEL,
-        )
+        llm = build_llm_or_none(api_key=GOOGLE_API_KEY, model=GEMINI_MODEL)
 
     graph = StateGraph(GraphState)
 

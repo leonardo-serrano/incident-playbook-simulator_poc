@@ -1,19 +1,17 @@
 # orchestrator/llm.py
 """
-Provider-agnostic LLM adapters for planner/summarizer/decision nodes.
+Google Gemini LLM adapter for planner/summarizer/decision nodes.
 
-- Adapters:
+- Adapter:
     * Google Gemini (google-genai)
-    * OpenAI
-    * Anthropic
 - Common interface:
     * plan(payload: Dict|Any, system_prompt: str) -> List[Dict] | str
     * summarize(state: Dict, system_prompt: str) -> str
-- Factory: build_llm_or_none(provider=..., ...)
+- Factory: build_llm_or_none(api_key=..., model=...)
 
 Design goals:
-- Keep provider-specific SDK differences isolated within each adapter.
-- Avoid scattering conditional logic across the codebase.
+- Mantener las diferencias del SDK encapsuladas en un solo lugar.
+- Evitar condicionales por proveedor en el resto del código.
 """
 
 from __future__ import annotations
@@ -252,133 +250,6 @@ class GeminiLLM:
         return self._generate(system_prompt, user)
 
 # ---------------------------------------------------------------------
-# OpenAI adapter
-# ---------------------------------------------------------------------
-
-class OpenAILLM:
-    """Thin wrapper over OpenAI SDK with the same interface as GeminiLLM."""
-
-    def __init__(self, api_key: str, model: str = "gpt-4o-mini"):
-        # Lazy import keeps dependency optional
-        try:
-            from openai import OpenAI  # type: ignore
-        except Exception as e:
-            raise RuntimeError(f"OpenAI SDK not available: {e}")
-        self._OpenAI = OpenAI
-        self.client = OpenAI(api_key=api_key)
-        self.model_name = model
-        # Low variance defaults; tune via env if desired
-        self.gen_config: Dict[str, Any] = {"temperature": 0.0, "max_tokens": 1024}
-
-    def _generate(self, system: str, user: str) -> str:
-        # Use responses API for unified text output
-        try:
-            resp = self.client.responses.create(
-                model=self.model_name,
-                input=f"{system}\n\n{user}",
-                temperature=self.gen_config.get("temperature", 0.0),
-                max_output_tokens=self.gen_config.get("max_tokens", 1024),
-            )
-            # Robust text extraction
-            txt = getattr(resp, "output_text", None)
-            if isinstance(txt, str) and txt.strip():
-                return txt
-            # Fallbacks
-            return str(resp)
-        except Exception as e:
-            log.debug("OpenAI generate failed: %s", e)
-            raise
-
-    def plan(self, payload: Dict[str, Any], system_prompt: str) -> Any:
-        user = json.dumps(payload, ensure_ascii=False)
-        text = self._generate(system_prompt, user)
-        try:
-            data = json.loads(text)
-            if isinstance(data, list):
-                return data
-        except Exception:
-            pass
-        return text
-
-    def summarize(self, state: Dict[str, Any], system_prompt: str) -> str:
-        payload = {
-            "alert": state.get("alert", {}),
-            "plan": state.get("plan", []),
-            "retrieved_docs_count": len(state.get("retrieved_docs", []) or []),
-            "metrics_present": bool(state.get("metrics")),
-            "logs_count": len(state.get("logs", []) or []),
-            "actions_taken": state.get("actions_taken", []),
-        }
-        user = json.dumps(payload, ensure_ascii=False)
-        return self._generate(system_prompt, user)
-
-
-# ---------------------------------------------------------------------
-# Anthropic adapter
-# ---------------------------------------------------------------------
-
-class AnthropicLLM:
-    """Thin wrapper over Anthropic SDK with the same interface as GeminiLLM."""
-
-    def __init__(self, api_key: str, model: str = "claude-3-5-sonnet-latest"):
-        try:
-            import anthropic  # type: ignore
-        except Exception as e:
-            raise RuntimeError(f"Anthropic SDK not available: {e}")
-        self._anthropic = anthropic
-        self.client = anthropic.Anthropic(api_key=api_key)
-        self.model_name = model
-        self.gen_config: Dict[str, Any] = {"temperature": 0.0, "max_tokens": 1024}
-
-    def _generate(self, system: str, user: str) -> str:
-        try:
-            msg = self.client.messages.create(
-                model=self.model_name,
-                system=system,
-                max_tokens=self.gen_config.get("max_tokens", 1024),
-                temperature=self.gen_config.get("temperature", 0.0),
-                messages=[{"role": "user", "content": user}],
-            )
-            # Extract text from content blocks
-            try:
-                blocks = getattr(msg, "content", None)
-                if isinstance(blocks, list) and blocks:
-                    for b in blocks:
-                        t = getattr(b, "text", None) or (b.get("text") if isinstance(b, dict) else None)
-                        if isinstance(t, str) and t.strip():
-                            return t
-            except Exception:
-                pass
-            return str(msg)
-        except Exception as e:
-            log.debug("Anthropic generate failed: %s", e)
-            raise
-
-    def plan(self, payload: Dict[str, Any], system_prompt: str) -> Any:
-        user = json.dumps(payload, ensure_ascii=False)
-        text = self._generate(system_prompt, user)
-        try:
-            data = json.loads(text)
-            if isinstance(data, list):
-                return data
-        except Exception:
-            pass
-        return text
-
-    def summarize(self, state: Dict[str, Any], system_prompt: str) -> str:
-        payload = {
-            "alert": state.get("alert", {}),
-            "plan": state.get("plan", []),
-            "retrieved_docs_count": len(state.get("retrieved_docs", []) or []),
-            "metrics_present": bool(state.get("metrics")),
-            "logs_count": len(state.get("logs", []) or []),
-            "actions_taken": state.get("actions_taken", []),
-        }
-        user = json.dumps(payload, ensure_ascii=False)
-        return self._generate(system_prompt, user)
-
-
-# ---------------------------------------------------------------------
 # Generic text adapter (kept for compatibility with older code paths)
 # ---------------------------------------------------------------------
 
@@ -452,36 +323,12 @@ def ensure_text_iface(llm_like: Any) -> Any:
     return _TextLLMAdapter(llm_like)
 
 # -------------------------- Factory helper -------------------------- #
-def build_llm_or_none(
-    provider: str = "google",
-    *,
-    google_key: Optional[str] = None,
-    google_model: str = "gemini-2.0-flash-001",
-    openai_key: Optional[str] = None,
-    openai_model: str = "gpt-4o-mini",
-    anthropic_key: Optional[str] = None,
-    anthropic_model: str = "claude-3-5-sonnet-latest",
-    **_: Any,
-):
-    """
-    Return a provider-specific LLM adapter or None if misconfigured/disabled.
-
-    Provider values: 'google' | 'openai' | 'anthropic'
-    """
+def build_llm_or_none(*, api_key: Optional[str] = None, model: str = "gemini-2.0-flash-001", **_: Any):
+    """Return a Google Gemini LLM adapter or None if misconfigured/disabled."""
     try:
-        p = (provider or "").strip().lower()
-        if p == "openai":
-            if not openai_key:
-                return None
-            return OpenAILLM(api_key=openai_key, model=openai_model)
-        if p == "anthropic":
-            if not anthropic_key:
-                return None
-            return AnthropicLLM(api_key=anthropic_key, model=anthropic_model)
-        # default to google
-        if not google_key:
+        if not api_key:
             return None
-        return GeminiLLM(api_key=google_key, model=google_model)
+        return GeminiLLM(api_key=api_key, model=model)
     except Exception as e:
         log.debug("build_llm_or_none failed: %s", e)
         return None
