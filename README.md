@@ -69,8 +69,8 @@ Google Gemini
 SIM_USE_LLM=true
 
 # Google Gemini credentials and model
-GOOGLE_API_KEY="your_google_key_here"   # or API_KEY
-GEMINI_MODEL=gemini-2.0-flash-001       # or MODEL
+GOOGLE_API_KEY="your_google_key_here"
+GEMINI_MODEL=gemini-2.0-flash-001
 
 # Logging
 LOG_LEVEL=INFO
@@ -107,7 +107,7 @@ Notes
 1) Create venv and install deps
 ```bash
 python -m venv .venv
-source .venv/bin/activate
+.venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
@@ -122,19 +122,19 @@ MCP_SERVER_URL=http://127.0.0.1:8790
 
 3) Start MCP HTTP server (Terminal 1)
 ```bash
-source .venv/bin/activate
-python3 -m mcp_server.http_server --host 127.0.0.1 --port 8790
+.venv\Scripts\activate
+python -m mcp_server.http_server --host 127.0.0.1 --port 8790
 ```
 
 4) Run alerts and acceptance (Terminal 2)
 ```bash
-source .venv/bin/activate
-export MCP_TRANSPORT=http
-export MCP_SERVER_URL=http://127.0.0.1:8790
+.venv\Scripts\activate
 
-python3 main.py --alert ALERT-1001
-python3 main.py --alert ALERT-1002
-python3 utils/acceptance_check.py
+python main.py --alert ALERT-1001
+python main.py --alert ALERT-1002
+
+python utils/acceptance_check.py # Linux
+pwsh -ExecutionPolicy Bypass -File .\acceptance.ps1 # Windows, with Powershell
 ```
 
 Notes
@@ -165,18 +165,16 @@ By default, the app uses MCP over stdio to communicate with the local mock MCP s
 Run the HTTP MCP server in one terminal:
 
 ```bash
-source .venv/bin/activate
-python3 -m mcp_server.http_server --host 127.0.0.1 --port 8765
+.venv\Scripts\activate
+python -m mcp_server.http_server --host 127.0.0.1 --port 8765
 ```
 
 Then, in another terminal, configure the client and run the app:
 
 ```bash
-source .venv/bin/activate
-export MCP_TRANSPORT=http
-export MCP_SERVER_URL=http://127.0.0.1:8765
+.venv\Scripts\activate
 
-python3 main.py --batch
+python main.py --batch
 ```
 
 Notes
@@ -184,88 +182,80 @@ Notes
 - MCP_TRANSPORT=http requires MCP_SERVER_URL (e.g., http://127.0.0.1:8765).
 - The HTTP server is a lightweight wrapper over the same tool functions defined in `mcp_server/server.py`.
 
-### Acceptance validation
-To validate acceptance criteria end-to-end (ensures ALERT-1001 → executor/scale_instance and ALERT-1002 → HITL/rollback_deployment):
-
-```bash
-python3 main.py --batch
-python3 utils/acceptance_check.py
-```
-
 ---
 
 ## Troubleshooting (Gemini + MCP HTTP)
 
-- Liberar puerto ocupado (ej. 8790) en Linux
-  - Identificar el proceso que ocupa el puerto:
-    ```bash
-    ss -ltnp | grep :8790
-    # o
-    lsof -i :8790
-    ```
-  - Matar el proceso por PID (ej. PID=12345):
-    ```bash
-    kill 12345         # intento amable
-    kill -9 12345      # forzar si no responde
-    ```
-  - Alternativa rápida con fuser:
-    ```bash
-    fuser -k 8790/tcp  # mata proceso(s) que usen 8790/tcp
-    ```
-  - Reiniciar el servidor MCP en ese puerto:
-    ```bash
-    python3 -m mcp_server.http_server --host 127.0.0.1 --port 8790
-    ```
-
-- Liberar puerto en macOS
-  - Identificar proceso:
-    ```bash
-    lsof -iTCP -sTCP:LISTEN -n -P | grep 8790
-    # o directamente obtener solo el PID
-    lsof -ti tcp:8790
-    ```
-  - Matar proceso (ej. PID=12345):
-    ```bash
-    kill 12345
-    kill -9 12345    # forzar
-    ```
-
-- Liberar puerto en Windows (PowerShell)
-  - Identificar proceso:
-    ```powershell
-    netstat -ano | findstr :8790
-    ```
-  - Matar proceso por PID (ej. 12345):
-    ```powershell
-    taskkill /PID 12345 /F
-    ```
-
-- Ejecutar el servidor MCP HTTP como servicio systemd (opcional)
-  - Unidad ejemplo `/etc/systemd/system/mcp-http.service`:
-    ```ini
-    [Unit]
-    Description=MCP HTTP Server (Incident Playbook PoC)
-    After=network-online.target
-
-    [Service]
-    Type=simple
-    WorkingDirectory=/path/a/incident-playbook-simulator_poc
-    ExecStart=/path/a/incident-playbook-simulator_poc/.venv/bin/python -m mcp_server.http_server --host 127.0.0.1 --port 8790
-    Restart=on-failure
-    RestartSec=3
-    Environment=MCP_TRANSPORT=http
-    Environment=MCP_SERVER_URL=http://127.0.0.1:8790
-
-    [Install]
-    WantedBy=multi-user.target
-    ```
-  - Comandos:
-    ```bash
-    sudo systemctl daemon-reload
-    sudo systemctl enable --now mcp-http.service
-    systemctl status mcp-http.service --no-pager
-    journalctl -u mcp-http.service -f
-    ```
+- Release taken port (ej. 8790) in Linux
+  - Identify the process taking up the port:
+  ```bash
+     ss -ltnp | grep :8790
+     # or
+     lsof -i :8790
+  ```
+  - Kill the process by PID (e.g., PID=12345):
+  ```bash
+     kill 12345         # polite attempt
+     kill -9 12345      # force if it does not respond
+  ```
+  - Quick alternative with fuser:
+  ```bash
+     fuser -k 8790/tcp  # kills process(es) using 8790/tcp
+  ```
+  - Restart the MCP server on that port:
+  ```bash
+     python -m mcp_server.http_server --host 127.0.0.1 --port 8790
+  ```
+  
+- Free up port on macOS
+  - Identify process:
+  ```bash
+     lsof -iTCP -sTCP:LISTEN -n -P | grep 8790
+     # or directly obtain only the PID
+     lsof -ti tcp:8790
+  ```
+  - Kill process (e.g., PID=12345):
+  ```bash
+     kill 12345
+     kill -9 12345    # force
+  ```
+  
+- Free up port on Windows (PowerShell)
+  - Identify process:
+  ```powershell
+     netstat -ano | findstr :8790
+  ```
+  - Kill process by PID (e.g., 12345):
+  ```powershell
+     taskkill /PID 12345 /F
+  ```
+  
+- Run the MCP HTTP server as a systemd service (optional)
+    - Example unit `/etc/systemd/system/mcp-http.service`:
+      ```ini
+      [Unit]
+      Description=MCP HTTP Server (Incident Playbook PoC)
+      After=network-online.target
+  
+      [Service]
+      Type=simple
+      WorkingDirectory=/path/to/incident-playbook-simulator_poc
+      ExecStart=/path/to/incident-playbook-simulator_poc/.venv/bin/python -m mcp_server.http_server --host 127.0.0.1 --port 8790
+      Restart=on-failure
+      RestartSec=3
+      Environment=MCP_TRANSPORT=http
+      Environment=MCP_SERVER_URL=http://127.0.0.1:8790
+  
+      [Install]
+      WantedBy=multi-user.target
+      ```
+  - Commands:
+      ```bash
+      sudo systemctl daemon-reload
+      sudo systemctl enable --now mcp-http.service
+      systemctl status mcp-http.service --no-pager
+      journalctl -u mcp-http.service -f
+      ```
 
 ## Outputs
 
@@ -341,7 +331,7 @@ The PoC is considered **done** when the following acceptance criteria are met:
 
 ### 🔄 Running the Acceptance Test (End-to-End)
 
-1. Ensure you have your virtual environment activated and dependencies installed:
+1. Ensure you have your virtual environment activated and dependencies installed (Windows env):
    ```powershell
    .\.venv\Scripts\Activate.ps1
    pip install -r requirements.txt
